@@ -89,13 +89,18 @@ func (c *Cache) SaveWriter(h restic.Handle) (io.WriteCloser, error) {
 // Save saves a file in the cache.
 func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 	debug.Log("Save to cache: %v", h)
+	if rd == nil {
+		return errors.New("Save() called with nil reader")
+	}
+
 	f, err := c.SaveWriter(h)
 	if err != nil {
 		return err
 	}
 
 	if _, err = io.Copy(f, rd); err != nil {
-		f.Close()
+		_ = f.Close()
+		_ = c.Remove(h)
 		return errors.Wrap(err, "Copy")
 	}
 

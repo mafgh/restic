@@ -91,9 +91,13 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 
 	debug.Log("Load(%v, %v, %v) delegated to backend", h, length, offset)
 	rd, err := b.Backend.Load(ctx, h, length, offset)
-	if err != nil && b.Backend.IsNotExist(err) {
-		// try to remove from the cache, ignore errors
-		_ = b.Cache.Remove(h)
+	if err != nil {
+		if b.Backend.IsNotExist(err) {
+			// try to remove from the cache, ignore errors
+			_ = b.Cache.Remove(h)
+		}
+
+		return nil, err
 	}
 
 	// only cache complete files
@@ -130,9 +134,13 @@ func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, e
 	debug.Log("cache Stat(%v)", h)
 
 	fi, err := b.Backend.Stat(ctx, h)
-	if err != nil && b.Backend.IsNotExist(err) {
-		// try to remove from the cache, ignore errors
-		_ = b.Cache.Remove(h)
+	if err != nil {
+		if b.Backend.IsNotExist(err) {
+			// try to remove from the cache, ignore errors
+			_ = b.Cache.Remove(h)
+		}
+
+		return fi, err
 	}
 
 	return fi, err
